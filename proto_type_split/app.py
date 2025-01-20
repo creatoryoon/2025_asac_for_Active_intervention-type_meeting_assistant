@@ -88,7 +88,7 @@ class STTSession:
         self.audio_queue = []
         
         # 장문 인식 간격 설정 (초)
-        self.long_recognition_interval = 10
+        self.long_recognition_interval = 15
         
         # 파일 기록을 위한 플래그 및 현재 라인
         self.need_timestamp = True
@@ -340,6 +340,16 @@ def on_disconnect(auth):
         session.finish()
         del active_sessions[sid]
         print(f"[{sid}] 브라우저 소켓 해제 및 세션 종료")
+
+
+@socketio.on('stop_recording')
+def handle_stop_recording():
+    sid = request.sid
+    if sid in active_sessions:
+        session = active_sessions[sid]
+        session.finish()
+        # session을 완전히 삭제하지는 않고, 같은 페이지에서 다시 녹음할 수 있도록 함
+        print(f"[{sid}] 녹음 중단 및 세션 종료")
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=33178, debug=True)
