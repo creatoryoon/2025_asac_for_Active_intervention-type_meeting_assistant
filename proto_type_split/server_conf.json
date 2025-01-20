@@ -1,0 +1,64 @@
+{
+    "server": {
+        "base_url": "http://baseurl"
+    },
+    "apps": {
+        "app": {
+            "port": 33178,
+            "secret_key": "mysecretkey"
+        },
+        "app2_result": {
+            "port": 33179,
+            "secret_key": "monitor_secret_key"
+        },
+        "app3_result": {
+            "port": 33181,
+            "secret_key": "summary_monitor_secret_key"
+        },
+        "app4_result": {
+            "port": 33183,
+            "secret_key": "syc_monitor_secret"
+        },
+        "final_test_4": {
+            "port": 33186,
+            "secret_key": "ai_secret_key"
+        }
+    },
+    "common": {
+        "host": "0.0.0.0",
+        "debug": true
+    },
+    "cors": {
+        "allowed_origins": [
+            "url:port",
+            "url:port",
+            "url:port",
+            "url:port",
+            "url:port",
+            "http://localhost:port",
+            "http://localhost:port",
+            "http://localhost:port",
+            "http://localhost:port",
+            "http://localhost:port",
+            "*"
+        ]
+    },
+    "clova": {
+        "host": "clovaspeech-gw.ncloud.com",
+        "port": 50051,
+        "invoke_url": "https://clovaspeech-gw.ncloud.com/your_invoke_ur;",
+        "client_secret": "your client secret key"
+    },
+    "directories": {
+        "recordings": "recordings"
+    },
+    "apis": {
+        "openai": {
+            "api_key": "your openai api key"
+        },
+        "naver_search": {
+            "client_id": "your naver search id",
+            "client_secret": "your naver search secret key"
+        }
+    }
+}
