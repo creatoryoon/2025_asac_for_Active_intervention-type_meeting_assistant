@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STT 통합 시스템</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 10px;
+      box-sizing: border-box;
+      gap: 10px;
+    }
+    h1 {
+      margin: 0;
+      padding: 0;
+      font-size: 22px;
+      color: #333;
+    }
+    .top-container {
+      display: flex;
+      flex: 1;
+      height: 40vh;  /* 상단 컨테이너 높이 축소 */
+      gap: 10px;
+    }
+    .middle-container {
+      display: flex;
+      flex: 1;
+      height: 40vh;  /* 중간 컨테이너 높이 축소 */
+      gap: 10px;
+
+    }
+    .bottom-container {
+      display: flex;
+      flex: 1;
+      gap: 10px;
+      height: 30vh;  /* 하단 컨테이너 높이 확장 */
+    }
+    .frame-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+      min-height: 0;
+    }
+    .frame-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin: 0;
+      padding: 4px;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #eee;
+      color: #333;
+      text-align: center;
+    }
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      height: calc(100%);
+    }
+    .container .frame-wrapper:first-child {
+        flex: 1; /* 첫 번째 프레임 너비 증가 */
+    }
+    .top-container .frame-wrapper:first-child{
+        flex: 0.5;
+    }
+    h1 {
+      margin: -10px 0;  /* 위아래 여백을 음수값으로 설정 */
+      padding: 0;
+      font-size: 22px;
+      color: #333;
+    }
+
+
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center;">능동 개입형 회의 보조 system</h1>
+    <div>
+    </div>
+    <div class="top-container">
+      <div class="frame-wrapper">
+        <div class="frame-title">ASR CTRL</div>
+        <iframe 
+          src="/" 
+          allow="microphone; camera" 
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        ></iframe>
+      </div>
+      <div class="frame-wrapper">
+        <div class="frame-title">실시간 인식 모니터링</div>
+        <iframe 
+          src="{{ url_app2 }}"
+          allow="microphone; camera" 
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        ></iframe>
+      </div>
+      <div class="frame-wrapper">
+        <div class="frame-title">요약 및 보정 모니터링</div>
+        <iframe 
+          src="{{ url_app3 }}"
+          allow="microphone; camera" 
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        ></iframe>
+      </div>
+    </div>
+    <div class="middle-container">
+        <div class="frame-wrapper">
+          <iframe
+            src="{{ url_app4 }}"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            title="React App"
+          ></iframe>
+        </div>
+      </div>
+    <div class="bottom-container">
+        <div class="frame-wrapper">
+            <div class="frame-title">other ver</div>
+            <iframe 
+              src="{{ url_final_test }}"
+              allow="microphone; camera" 
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            ></iframe>
+          </div>
+    </div>
+  </div>
+    
+  <script>
+    window.onload = function() {
+      const iframes = document.querySelectorAll('iframe');
+      iframes.forEach((iframe, index) => {
+        iframe.onload = function() {
+          console.log(`iframe ${index + 1} loaded successfully`);
+        };
+        
+        iframe.onerror = function() {
+          console.error(`iframe ${index + 1} failed to load`);
+        };
+      });
+    };
+  </script>
+</body>
+</html>

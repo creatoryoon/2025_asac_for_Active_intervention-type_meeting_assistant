@@ -1,0 +1,123 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파일 모니터링</title>
+    <style>
+       * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            padding: 3px;
+        }
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .result-box {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+        }
+        .result-box h4 {
+            margin: 0 0 3px 0;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 1;
+        }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="results-container">
+            <div class="result-box">
+                <h4 style="text-align: center;">QA 결과</h4>
+                <div id="qaContent" class="content-area"></div>
+            </div>
+            <div class="result-box">
+              <h4 style="text-align: center;">검색 결과</h4>
+                <div id="searchContent" class="content-area"></div>
+            </div>
+            <div class="result-box">
+              <h4 style="text-align: center;">요약 결과</h4>
+                <div id="summaryContent" class="content-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io('http://' + window.location.hostname + ':33183', {
+                transports: ['websocket'],
+                upgrade: false
+            });
+
+            const qaContent = document.getElementById('qaContent');
+            const searchContent = document.getElementById('searchContent');
+            const summaryContent = document.getElementById('summaryContent');
+
+            socket.on('file_update', (data) => {
+                const timestamp = document.createElement('div');
+                timestamp.className = 'timestamp';
+                timestamp.textContent = data.timestamp;
+
+                const content = document.createElement('div');
+                content.textContent = data.content;
+
+                let targetElement;
+                switch(data.type) {
+                    case 'qa':
+                        targetElement = qaContent;
+                        break;
+                    case 'search':
+                        targetElement = searchContent;
+                        break;
+                    case 'summary':
+                        targetElement = summaryContent;
+                        break;
+                }
+
+                if (targetElement) {
+                    // 새로운 내용을 추가
+                    targetElement.appendChild(timestamp);
+                    targetElement.appendChild(content);
+                    // 스크롤을 최하단으로 이동
+                    targetElement.scrollTop = targetElement.scrollHeight;
+                }
+            });
+
+            socket.onAny((event, ...args) => {
+                console.log('이벤트 수신:', event, args);
+            });
+        });
+    </script>
+</body>
+</html>

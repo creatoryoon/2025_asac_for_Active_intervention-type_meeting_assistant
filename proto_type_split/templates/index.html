@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>실시간 STT 데모</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2px;
+    }
+    .status {
+      margin: 5px 0;
+      padding: 5px;
+      border-radius: 4px;
+      background-color: #f5f5f5;
+    }
+    .status.recording {
+      background-color: #ffebee;
+    }
+    .results-container {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 5px;
+    }
+    .result-box {
+      padding: 0px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      height: 70px;
+      overflow-y: auto;
+    }
+    .result-box h3 {
+      margin: 0 0 10px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      color: #333;
+      text-align: center;
+    }
+    .partial {
+      color: #666;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .debug {
+      font-family: monospace;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #555;
+      white-space: pre-wrap;
+    }
+    .controls {
+      margin: 1px 0;
+      padding: 1px;
+      background-color: #f8f9fa;
+      border-radius: 2px;
+      text-align: center;
+    }
+    button {
+      padding: 3px 3px;
+      margin: 0 3px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2196F3;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    button:not(:disabled):hover {
+      background-color: #1976D2;
+    }
+    .monitor-link {
+      display: block;
+      text-align: center;
+      margin-top: 0px;
+      color: #2196F3;
+      text-decoration: none;
+    }
+    .monitor-link:hover {
+      text-decoration: underline;
+    .result-box h4 {
+      margin: 0; /* 기본 margin을 줄이고 아래쪽만 5px 여백 */
+      padding: 0;
+      border-bottom: 1px solid #eee;
+      color: #333;
+      text-align: center;
+      width: 100%;
+        display: block;
+
+    }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- <h2>Web STT</h2> -->
+    
+    <div class="controls">
+      <button id="startButton">녹음 시작</button>
+      <button id="stopButton" disabled>녹음 중지</button>
+    </div>
+    <div id="status" class="status"></div>
+
+    <div class="results-container">
+      <div class="result-box">
+        <h4 style="text-align: center;">실시간 인식 결과</h4>
+        <div id="partialResult" class="partial"></div>
+      </div>
+
+      <div class="result-box">
+        <h4 style="text-align: center;">디버그 로그</h4>
+        <pre id="debugLog" class="debug"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+  <script>
+    class AudioStreamer {
+      constructor() {
+        this.socket = null;
+        this.mediaStream = null;
+        this.audioContext = null;
+        this.analyser = null;
+        this.scriptProcessor = null;
+        this.isRecording = false;
+
+        // DOM elements
+        this.startButton = document.getElementById('startButton');
+        this.stopButton = document.getElementById('stopButton');
+        this.statusDiv = document.getElementById('status');
+        this.partialDiv = document.getElementById('partialResult');
+        this.debugLog = document.getElementById('debugLog');
+
+        // Bind events
+        this.startButton.onclick = () => this.startRecording();
+        this.stopButton.onclick = () => this.stopRecording();
+        
+        // Initialize Socket.IO
+        this.initializeSocket();
+      }
+
+      log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugLog.textContent += `[${timestamp}] ${message}\n`;
+        this.debugLog.scrollTop = this.debugLog.scrollHeight;
+      }
+
+      initializeSocket() {
+        this.socket = io({
+          transports: ['websocket'],
+          upgrade: false
+        });
+
+        this.socket.on('connect', () => {
+          this.log('서버에 연결되었습니다.');
+          this.updateStatus('서버 연결 완료');
+        });
+
+        this.socket.on('disconnect', () => {
+          this.log('서버와의 연결이 끊겼습니다.');
+          this.updateStatus('서버 연결 끊김');
+          this.stopRecording();
+        });
+
+        this.socket.on('stt_partial', (data) => {
+          this.partialDiv.textContent = `${data.text}`;
+          this.log(`Partial: ${data.text}`);
+        });
+
+        this.socket.on('stt_final', (data) => {
+          // 실시간 결과 초기화
+          this.partialDiv.textContent = '';
+          this.log(`Final: ${data.text}`);
+        });
+      }
+
+      updateStatus(message) {
+        this.statusDiv.textContent = message;
+        this.statusDiv.className = 'status' + (this.isRecording ? ' recording' : '');
+      }
+
+      async startRecording() {
+        try {
+          this.mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              channelCount: 1,
+              sampleRate: 16000
+            }
+          });
+          
+          this.audioContext = new AudioContext({
+            sampleRate: 16000
+          });
+          
+          const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+          this.analyser = this.audioContext.createAnalyser();
+          this.scriptProcessor = this.audioContext.createScriptProcessor(4096, 1, 1);
+          
+          source.connect(this.analyser);
+          this.analyser.connect(this.scriptProcessor);
+          this.scriptProcessor.connect(this.audioContext.destination);
+          
+          this.scriptProcessor.onaudioprocess = (e) => {
+            if (this.isRecording) {
+              const inputData = e.inputBuffer.getChannelData(0);
+              this.socket.emit('audio_data', inputData.buffer);
+            }
+          };
+
+          this.isRecording = true;
+          this.startButton.disabled = true;
+          this.stopButton.disabled = false;
+          this.updateStatus('녹음 중...');
+          this.log('녹음을 시작했습니다.');
+
+        } catch (error) {
+          this.log(`오류 발생: ${error.message}`);
+          alert('마이크 접근 권한이 필요합니다.');
+        }
+      }
+
+      stopRecording() {
+        if (this.isRecording) {
+          this.isRecording = false;
+          this.startButton.disabled = false;
+          this.stopButton.disabled = true;
+          this.updateStatus('녹음 중지됨');
+          this.log('녹음을 중지했습니다.');
+
+          if (this.scriptProcessor) {
+            this.scriptProcessor.disconnect();
+            this.scriptProcessor = null;
+          }
+
+          if (this.analyser) {
+            this.analyser.disconnect();
+            this.analyser = null;
+          }
+
+          if (this.mediaStream) {
+            this.mediaStream.getTracks().forEach(track => track.stop());
+            this.mediaStream = null;
+          }
+
+          if (this.audioContext) {
+            this.audioContext.close();
+            this.audioContext = null;
+          }
+        }
+      }
+    }
+
+    // Initialize the audio streamer when the page loads
+    window.onload = () => {
+      window.audioStreamer = new AudioStreamer();
+    };
+  </script>
+</body>
+</html>

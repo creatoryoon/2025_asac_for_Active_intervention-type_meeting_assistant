@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>요약 및 보정 모니터링</title>
+    <style>
+         * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5px;
+        }
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+        .result-box {
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+        .result-box h3 {
+            margin: 0 0 2px 0;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 1;
+        }
+        #summaryResult, #gptResult {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .text-line {
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="results-container">
+            <div class="result-box">
+                <h4 style="text-align: center;">요약 결과</h4>
+                <div id="summaryResult"></div>
+            </div>
+
+            <div class="result-box">
+                <h4 style="text-align: center;">보정 결과</h4>
+                <div id="gptResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io('http://' + window.location.hostname + ':33181', {
+                transports: ['websocket'],
+                upgrade: false
+            });
+
+            const summaryResult = document.getElementById('summaryResult');
+            const gptResult = document.getElementById('gptResult');
+
+            socket.on('text_update', (data) => {
+                if (data.type === 'summary') {
+                    summaryResult.innerHTML = '';
+                    const div = document.createElement('div');
+                    div.className = 'text-line';
+                    div.textContent = data.text;
+                    summaryResult.appendChild(div);
+                    summaryResult.scrollTop = summaryResult.scrollHeight;
+                } else if (data.type === 'gpt') {
+                    gptResult.innerHTML = '';
+                    const div = document.createElement('div');
+                    div.className = 'text-line';
+                    div.textContent = data.text;
+                    gptResult.appendChild(div);
+                    gptResult.scrollTop = gptResult.scrollHeight;
+                }
+            });
+
+            socket.onAny((event, ...args) => {
+                console.log('이벤트 수신:', event, args);
+            });
+        });
+    </script>
+</body>
+</html>

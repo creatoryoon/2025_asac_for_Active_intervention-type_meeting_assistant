@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Monitoring</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        window.onload = function() {
+            loadSummary();
+            setInterval(loadSummary, 5000);
+        };
+
+        function loadSummary() {
+            fetch('/summary')
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const content = doc.querySelector('.summary-container').innerHTML;
+                    document.getElementById('summary-results').innerHTML = content;
+                })
+                .catch(error => console.error('Summary 로딩 실패:', error));
+        }
+        
+        socket.on('llm_update', function(data) {
+            const resultDiv = document.getElementById(data.type + '-results');
+            if (!resultDiv) return;
+
+            const newResult = document.createElement('div');
+            newResult.className = 'result-item';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            newResult.innerHTML = `
+                <div class="timestamp">[${timestamp}]</div>
+                <div class="content">${data.content}</div>
+            `;
+            
+            resultDiv.appendChild(newResult);
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 5px;
+            background-color: #f8f9fa;
+        }
+        
+        h3 {
+            color: #333;
+            margin: 2px 0;
+            font-size: 1em;
+        }
+
+        .result-container {
+            margin: 3px 0;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .result-item {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .content {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #summary-results .result-item {
+            border-left-color: #28a745;
+        }
+
+        #qa-results .result-item {
+            border-left-color: #17a2b8;
+        }
+
+        #search-results .result-item {
+            border-left-color: #ffc107;
+        }
+        
+        .container {
+            display: flex;
+            gap: 5px;
+            justify-content: space-between;
+        }
+        
+        .column {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .column {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="column">
+            <h3 style="text-align: center;">Summary Results</h3>
+            <div id="summary-results" class="result-container"></div>
+        </div>
+        
+        <div class="column">
+          <h3 style="text-align: center;">QA Results</h3>
+            <div id="qa-results" class="result-container"></div>
+        </div>
+        
+        <div class="column">
+          <h3 style="text-align: center;">Search Results</h3>
+            <div id="search-results" class="result-container"></div>
+        </div>
+    </div>
+</body>
+</html>
