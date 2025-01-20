@@ -1,0 +1,31 @@
+# 웹 서버 관련
+Flask==3.0.2
+Flask-SocketIO==5.5.1
+Flask-Cors==5.0.0
+
+# 파일 모니터링
+watchdog==4.0.0
+
+# OpenAI/LangChain 관련
+openai==1.59.7
+langchain==0.3.14
+langchain-openai==0.3.0
+langchain-community==0.3.14
+langchain-core==0.3.29
+
+# 음성 처리 관련
+PyAudio==0.2.14
+pydub==0.25.1
+grpcio==1.69.0
+grpcio-tools==1.69.0
+
+# 유틸리티
+python-dotenv==0.21.0
+numpy==1.26.4
+pandas==2.2.3
+requests==2.31.0
+beautifulsoup4==4.12.3
+psutil==5.9.8
+
+# 날짜/시간 처리
+python-dateutil==2.8.2
